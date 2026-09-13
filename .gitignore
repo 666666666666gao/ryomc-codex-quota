@@ -4,3 +4,6 @@ node_modules/
 *.log
 coverage/
 artifacts/
+__pycache__/
+*.pyc
+reader.json

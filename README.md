@@ -2,7 +2,15 @@
 
 在 Codex 对话内查询 **CPA 上游 Codex 账号的周额度剩余比例、重置时间**，也可在 Codex 右侧浏览器面板打开本机额度页。
 
-这是一个 **skills + Node.js 脚本** 插件，无第三方 npm 依赖，不依赖 MCP 服务器。它不是 Chrome 扩展，不替换 Codex 原生状态栏，也不显示 New API 钱包余额。
+这是一个 **skills + Node.js 脚本** 插件，无第三方 npm 依赖，不依赖 MCP 服务器。另附 Windows 独立悬浮条和服务器只读接口。它不是 Chrome 扩展，不替换 Codex 原生状态栏，也不显示 New API 钱包余额。
+
+## 普通用户：右下角悬浮条（推荐）
+
+**普通用户不需要 CPA 管理密钥。** 管理员部署 `server/quota_service.py` 后，向用户提供 HTTPS 额度接口与专用只读令牌。用户将二者保存到用户目录 `.config/ryomc-codex-quota/reader.json`，然后运行 `RyomcQuota.exe`。
+
+悬浮条贴近 Codex 窗口右下角显示共享线路周额度，每两分钟刷新；支持拖动、手动刷新和关闭。不是个人账户钱包，不是嵌入式原生状态栏。查询失败不继续显示旧额度。
+
+详见 [部署、配置、构建及回滚说明](server/DEPLOYMENT.md)。下方原始管理地址/管理密钥配置仅适用于管理员自用面板。
 
 ## 功能
 

@@ -1,18 +1,22 @@
 {
   "name": "ryomc-codex-quota",
-  "version": "0.1.0",
+  "version": "0.1.0+codex.20260913123552",
   "description": "Read CPA upstream Codex weekly quota in Codex, with a private local dashboard.",
   "author": {
     "name": "666666666666gao"
   },
   "skills": "./skills/",
   "interface": {
-    "displayName": "Ryomc 上游额度",
-    "shortDescription": "查看 CPA 上游周额度与重置时间",
-    "longDescription": "查询真实上游周额度，打开本机额度面板。不修改账户、代理、调度或计费。不替换 Codex 原生额度栏。需要 Node.js 22+ 与 CPA 管理访问权限。",
+    "displayName": "Ryomc \u4e0a\u6e38\u989d\u5ea6",
+    "shortDescription": "\u53ea\u8bfb\u7ebf\u8def\u5468\u989d\u5ea6\u4e0e Windows \u53f3\u4e0b\u89d2\u60ac\u6d6e\u6761",
+    "longDescription": "\u666e\u901a\u7528\u6237\u901a\u8fc7\u4e13\u7528\u53ea\u8bfb\u63a5\u53e3\u67e5\u770b\u5171\u4eab\u7ebf\u8def\u5468\u989d\u5ea6\uff0c\u65e0\u9700 CPA \u7ba1\u7406\u5bc6\u94a5\u3002\u9644 Windows \u72ec\u7acb\u60ac\u6d6e\u6761\uff0c\u652f\u6301\u5237\u65b0\u3001\u62d6\u52a8\u3001\u5173\u95ed\u3002\u4fdd\u7559\u7ba1\u7406\u5458\u81ea\u7528\u9762\u677f\uff0c\u4e0d\u66ff\u6362 Codex \u539f\u751f\u72b6\u6001\u680f\u3002",
     "developerName": "666666666666gao",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": ["查看我的 CPA 上游周额度", "打开 Ryomc 额度面板"]
+    "defaultPrompt": [
+      "\u67e5\u770b\u7ebf\u8def\u5468\u989d\u5ea6",
+      "\u542f\u52a8 Windows \u989d\u5ea6\u60ac\u6d6e\u6761",
+      "\u6253\u5f00\u7ba1\u7406\u5458\u989d\u5ea6\u9762\u677f"
+    ]
   }
 }
