@@ -6,13 +6,31 @@
 
 ## Windows：下载后直接运行
 
-1. 在 [Releases](https://github.com/666666666666gao/ryomc-codex-quota/releases/latest) 下载 `ryomc-quota-windows-v0.3.0.zip`，解压全部文件。
+1. 在 [Releases](https://github.com/666666666666gao/ryomc-codex-quota/releases/latest) 下载 `ryomc-quota-windows-v0.4.0.zip`，先关闭旧版悬浮条，解压全部文件到新目录。
 2. 确认 Codex 已配置你的中转站，例如 `https://api.ryomc.top/v1`，并在 `auth.json` 中保存该站创建的 API 密钥。
 3. 双击 `RyomcQuota.exe`，将 Codex 切换到前台。
 
 不要只复制 EXE：同目录的 `Tommy.dll` 是 TOML 配置解析依赖。程序未进行代码签名。
 
 悬浮条是独立窗口，**不是 Codex 原生状态栏**。靠近 Codex 右下角显示，每两分钟刷新；可拖动文字调整位置，点 ↻ 刷新、× 关闭。不添加开机启动，不修改 Windows 安全设置。查询失败不会继续显示旧额度。
+
+### 缺少 auth.json：点击“连接设置”
+
+v0.4.0 不再把缺少凭据文件笼统显示为连接故障。只要能读取 Codex 中的站点和模型，设置窗口就能自动填入二者，即使 auth.json 不存在。
+
+1. 点击悬浮条的 **连接设置**（也可运行 `RyomcQuota.exe --settings`）。
+2. 确认 Base URL，例如 `https://api.ryomc.top/v1`，以及你有权使用的模型。
+3. 在本机密码框填入**该网站创建的 API 密钥**，不是 CPA 管理密钥，也不是 OAuth Token。
+4. 点击 **保存并测试**。保存后立即查询，显示连接成功、HTTP 错误、超时或解析失败的具体类别。
+5. 关闭设置窗口，悬浮条会显示“独立”模式。下次启动仍使用用户明确保存的这条连接。
+
+Base URL、模型和密钥一起保存在当前用户的 **Windows 凭据管理器**，条目名为 `RyomcQuota/ManualConnection/v1`，不写入插件目录或 Codex 配置。密钥不回填到界面；修改连接时需要重新输入，避免把旧站密钥发给新站。
+
+需要重新跟随 Codex/CC Switch 配置时，点击 **恢复自动读取** 并确认。这只删除本插件自己的凭据条目，不修改 Codex 配置。保存失败不会启用新连接；保存成功但测试失败会明确提示“独立连接已保存”，可修改或恢复自动读取，不会回退到其他账号。
+
+默认自动模式没有保存的独立连接时才读取 Codex。显式 `--shared` 保持原有共享只读模式；如需独立模式请退出后正常启动，或从悬浮条内保存连接。独立连接功能仅适用于 Windows 悬浮条；Node 命令行仍使用下方自动读取/显式共享模式，不读取 Windows 凭据库。
+
+Windows 凭据管理器不是针对当前用户下所有程序的隔离保险库；具有该用户权限的软件仍可能访问凭据。只在可信电脑保存密钥，不要将密钥发到聊天或 Issue。使用系统接口说明：[Microsoft CredWriteW](https://learn.microsoft.com/en-us/windows/win32/api/wincred/nf-wincred-credwritew)。
 
 ## 自动读取规则
 
@@ -73,7 +91,10 @@ Windows：`RyomcQuota.exe --shared`。这种模式才读取 `~/.config/ryomc-cod
 
 | 提示 | 含义 |
 |---|---|
-| 配置或连接不可用 | 未找到有效中转配置/API 密钥、官方 OAuth 登录、网络问题或响应格式异常；不是自动判定额度耗尽 |
+| 已读取站点配置，但缺少 auth.json | 未找到预期的凭据文件；可点连接设置保存独立连接，不需要改 Codex |
+| auth.json 中没有 API 密钥 / 指定的密钥环境变量为空 | 自动模式没有可用 API 密钥；不会转而读取 OAuth Token |
+| 连接失败 / 请求超时 | 检查网络、代理或 HTTPS 证书，不表示额度耗尽 |
+| 解析额度响应失败 / 响应不是有效的周额度数据 | 返回内容不是预期的额度 JSON，未显示原始响应或旧额度 |
 | 401 | 密钥无效、禁用或用户不可用 |
 | 403 | 此密钥不能查询该模型线路；当前适配器不支持带 IP 白名单的令牌 |
 | 404 | 此站没有配套额度接口，或者 Base URL 不正确 |
@@ -90,5 +111,7 @@ Windows：`RyomcQuota.exe --shared`。这种模式才读取 `~/.config/ryomc-cod
 npm test
 python -m unittest discover -s server -v
 ```
+
+Windows 构建后可运行 `windows/test.ps1`，包含缺少 auth.json 的回归、独立测试条目的 Windows 凭据写入/读取/删除、请求与错误分类及设置窗渲染。测试只使用临时合成密钥，不覆盖实际连接。
 
 测试使用合成数据，不代表实时额度。真实联调应验证 HTTPS 接口、合法/非法 API 密钥及对应路由。不要将真实配置或密钥放入源码、Issue 或截图。

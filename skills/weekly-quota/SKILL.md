@@ -29,6 +29,8 @@ For the Windows floating bar, run `windows/build.ps1` in this plugin's directory
 
 The dashboard below is the separate administrator-only mode, not the normal user setup:
 
+Windows v0.4.0: when auth.json is missing, do not create/overwrite it or inspect the system's Codex credentials. Direct the user to the overlay's connection settings button, or launch `RyomcQuota.exe --settings` when requested. Base URL/model prefill works without auth.json. The user enters the site's API key themselves in the masked field; Save and Test stores only this app's Windows Credential Manager entry and tests the endpoint. Never ask for the secret in chat or automate real credential entry. Restore Automatic removes only this app's entry after confirmation. Normal launch prefers an explicitly saved independent connection; failed queries do not fall back. This setting is Windows-overlay-only; the Node reader does not consume the Windows credential entry.
+
 Run `node <absolute-plugin-root>/scripts/quota.mjs serve` as a retained execution session. Do not set up a recurring automation unless requested.
 The command prints a loopback URL containing an ephemeral access token. Use the available Codex open-panel tool to open that exact URL as a browser target in the right panel. Do not post it to GitHub or other users. Keep the serving session alive while the dashboard is needed.
 If the panel cannot be opened, return its local URL and accurately describe the limitation. Do not claim a native status-bar integration.

@@ -1,4 +1,10 @@
-# Server / Windows reader (v0.3.0)
+# Server / Windows reader
+
+## Windows v0.4.0 connection settings
+
+No server migration is needed for v0.4.0. If automatic mode cannot read auth.json, click the overlay's connection settings button. Non-secret Base URL/model prefill is independent of auth loading. Users explicitly save their existing site API key in the Windows Generic Credential `RyomcQuota/ManualConnection/v1`, then the same quota endpoint is tested immediately. The credential contains the matching endpoint/model/key together and is never a Codex credential entry. Restore automatic mode removes only this entry after confirmation. The UI never prefills saved keys. No plaintext config/auth file is created.
+
+This mode belongs to the Windows overlay, not the Node reader. A saved independent connection is authoritative in normal launch mode, even if querying fails. Explicit --shared remains a separate opt-in mode. Close old versions before launching the new EXE. Settings can also be opened with `RyomcQuota.exe --settings`. Errors identify missing auth, invalid key, unsupported endpoint, network/timeout and invalid quota data without raw credential-bearing messages.
 
 ## Automatic Codex configuration mode
 

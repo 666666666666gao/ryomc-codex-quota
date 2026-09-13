@@ -18,14 +18,20 @@ public class ConfigTests {
         if(CodexConnection.Load(false).readToken!="test-env-key") throw new Exception("env key");
         Environment.SetEnvironmentVariable("QUOTA_FIXTURE_KEY",null);
         bool failed=false;
-        try {CodexConnection.Load(false);} catch(FormatException) {failed=true;}
+        try {CodexConnection.Load(false);} catch(ConnectionProblem) {failed=true;}
         if(!failed) throw new Exception("must not fall back to auth.json");
+        File.WriteAllText(Path.Combine(root,"config.toml"),toml);
+        File.Delete(Path.Combine(root,"auth.json"));
+        if(CodexConnection.ReadSettings().model!="gpt-6-astra") throw new Exception("prefill without auth.json");
+        failed=false;
+        try {CodexConnection.Load(false);} catch(ConnectionProblem e) {failed=e.Message.Contains("auth.json");}
+        if(!failed) throw new Exception("missing auth must be explicit");
         File.WriteAllText(Path.Combine(root,"config.toml"),"model='gpt-6-astra'");
         failed=false;
-        try {CodexConnection.Load(false);} catch(FormatException) {failed=true;}
+        try {CodexConnection.Load(false);} catch(ConnectionProblem) {failed=true;}
         if(!failed) throw new Exception("must not assume relay for OAuth mode");
         // Exact unique directory created above, no user configuration touched.
         Directory.Delete(root,true);
-        Console.WriteLine("Windows config tests: 5 passed");
+        Console.WriteLine("Windows config tests: 7 passed");
     }
 }

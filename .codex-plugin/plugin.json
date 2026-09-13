@@ -1,6 +1,6 @@
 {
   "name": "ryomc-codex-quota",
-  "version": "0.1.0+codex.20260913125628",
+  "version": "0.1.0+codex.20260913135658",
   "description": "Read the saved Codex relay configuration and query its upstream weekly quota, with a Windows overlay.",
   "author": {
     "name": "666666666666gao"
