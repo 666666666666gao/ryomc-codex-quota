@@ -15,7 +15,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not restrict configuration directory permissions.' }
     $readerConfig = @{endpoint=$readerUri.AbsoluteUri; readToken=$readerToken} | ConvertTo-Json
     [IO.File]::WriteAllText((Join-Path $readerDirectory 'reader.json'), $readerConfig, (New-Object Text.UTF8Encoding($false)))
-    Write-Output 'Saved. Start RyomcQuota.exe and bring Codex to the foreground.'
+    Write-Output 'Saved for explicit shared mode. Start RyomcQuota.exe --shared and bring Codex to the foreground. Default mode uses the existing Codex API configuration.'
 } finally {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($readerPointer)
     $readerToken = $null

@@ -1,7 +1,7 @@
 {
   "name": "ryomc-codex-quota",
-  "version": "0.1.0+codex.20260913123552",
-  "description": "Read CPA upstream Codex weekly quota in Codex, with a private local dashboard.",
+  "version": "0.1.0+codex.20260913125628",
+  "description": "Read the saved Codex relay configuration and query its upstream weekly quota, with a Windows overlay.",
   "author": {
     "name": "666666666666gao"
   },
@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Ryomc \u4e0a\u6e38\u989d\u5ea6",
     "shortDescription": "\u53ea\u8bfb\u7ebf\u8def\u5468\u989d\u5ea6\u4e0e Windows \u53f3\u4e0b\u89d2\u60ac\u6d6e\u6761",
-    "longDescription": "\u666e\u901a\u7528\u6237\u901a\u8fc7\u4e13\u7528\u53ea\u8bfb\u63a5\u53e3\u67e5\u770b\u5171\u4eab\u7ebf\u8def\u5468\u989d\u5ea6\uff0c\u65e0\u9700 CPA \u7ba1\u7406\u5bc6\u94a5\u3002\u9644 Windows \u72ec\u7acb\u60ac\u6d6e\u6761\uff0c\u652f\u6301\u5237\u65b0\u3001\u62d6\u52a8\u3001\u5173\u95ed\u3002\u4fdd\u7559\u7ba1\u7406\u5458\u81ea\u7528\u9762\u677f\uff0c\u4e0d\u66ff\u6362 Codex \u539f\u751f\u72b6\u6001\u680f\u3002",
+    "longDescription": "\u81ea\u52a8\u8bfb\u53d6\u5df2\u4fdd\u5b58\u7684 Codex \u4e2d\u8f6c Base URL \u4e0e API \u5bc6\u94a5\uff0c\u7531\u540c\u7ad9\u989d\u5ea6\u63a5\u53e3\u9a8c\u8bc1\u8def\u7531\u5e76\u8fd4\u56de\u5171\u4eab\u4e0a\u6e38\u5468\u989d\u5ea6\u3002\u65e0\u9700 CPA \u7ba1\u7406\u5bc6\u94a5\uff1b\u7ad9\u70b9\u987b\u90e8\u7f72\u914d\u5957\u63a5\u53e3\u3002\u9644 Windows \u72ec\u7acb\u60ac\u6d6e\u6761\uff0c\u4e0d\u66ff\u6362 Codex \u539f\u751f\u72b6\u6001\u680f\u3002",
     "developerName": "666666666666gao",
     "category": "Productivity",
     "capabilities": [],

@@ -1,5 +1,7 @@
 """Private upstream collector. Exposes only a sanitized weekly snapshot."""
 import hmac
+import hashlib
+import re
 import json
 import os
 from pathlib import Path
@@ -39,6 +41,11 @@ def collect(cfg):
     if auth.get('disabled') or auth.get('type') != 'codex':
         raise ValueError('account_unavailable')
     upstream = yaml.safe_load(Path(cfg['cpaConfig']).read_text())
+    # A single displayed account must still be the only eligible Codex account.
+    accounts = [p for p in Path(cfg['authFile']).parent.glob('*.json')
+                if (lambda a: a.get('type') == 'codex' and not a.get('disabled'))(json.loads(p.read_text()))]
+    if accounts != [Path(cfg['authFile'])] or upstream.get('codex-api-key') or upstream.get('openai-compatibility'):
+        raise ValueError('ambiguous_upstream')
     proxy = auth.get('proxy_url') or upstream.get('proxy-url')
     token = auth.get('access_token')
     if not token:
@@ -83,16 +90,70 @@ class Snapshot:
             return self.ok, self.result
 
 
-def handler_for(cfg, snapshot):
+def lookup_route(cfg, key_hash, model):
+    # Only validated hashes/model identifiers enter SQL. Keys never enter argv/logs.
+    sql = '''SELECT json_build_object(
+      'status',t.status,'user_status',u.status,'restricted_ips',coalesce(t.allow_ips,'')<>'',
+      'model_limits_enabled',t.model_limits_enabled,'model_limits',t.model_limits,
+      'group',coalesce(nullif(t."group",''),u."group"),'cross_group',t.cross_group_retry,
+      'routes',coalesce((SELECT json_agg(json_build_object('id',c.id,'url',c.base_url))
+        FROM abilities a JOIN channels c ON c.id=a.channel_id
+        WHERE a.enabled=true AND c.status=1 AND a.model='%s'
+        AND a."group"=coalesce(nullif(t."group",''),u."group")), '[]'::json))
+      FROM tokens t JOIN users u ON u.id=t.user_id
+      WHERE encode(sha256(convert_to(t.key,'UTF8')),'hex')='%s'
+      AND t.deleted_at IS NULL AND u.deleted_at IS NULL;''' % (model, key_hash)
+    result = subprocess.run(['docker', 'exec', '-i', cfg['postgresContainer'], 'psql', '-X',
+                             '-U', cfg['postgresUser'], '-d', cfg['postgresDatabase'], '-At', '-v', 'ON_ERROR_STOP=1'],
+                            input=sql, text=True, capture_output=True, timeout=10)
+    if result.returncode:
+        raise ValueError('route_lookup_failed')
+    return json.loads(result.stdout) if result.stdout.strip() else None
+
+
+def authorize_newapi(cfg, authorization, model, lookup=lookup_route):
+    if not authorization.startswith('Bearer sk-'):
+        return 401
+    key = authorization[len('Bearer sk-'):]
+    if not re.fullmatch(r'[A-Za-z0-9]{16,128}', key):
+        return 401
+    if not re.fullmatch(r'[A-Za-z0-9_.:/-]{1,128}', model):
+        return 403
+    row = lookup(cfg, hashlib.sha256(key.encode()).hexdigest(), model)
+    if not row or row['status'] not in (1, 3, 4) or row['user_status'] != 1:
+        return 401
+    # This adapter does not bypass token IP restrictions or guess auto-group routes.
+    if row['restricted_ips']:
+        return 403
+    if row['model_limits_enabled'] and model not in (row['model_limits'] or '').split(','):
+        return 403
+    if row['group'] == 'auto' or row['cross_group']:
+        return 409
+    routes = row['routes']
+    if not routes:
+        return 403
+    if any(r['id'] != cfg['channelId'] or r['url'] != cfg['cpaBaseUrl'] for r in routes):
+        return 409
+    return 200
+
+
+def handler_for(cfg, snapshot, authorize=authorize_newapi):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
 
         def do_GET(self):
-            if self.path != '/quota/weekly':
+            if self.path not in ('/quota/weekly', '/v1/quota/weekly'):
                 return self.reply(404, {'error': 'not_found'})
             given = self.headers.get('Authorization', '')
-            if not hmac.compare_digest(given.encode(), ('Bearer ' + cfg['readToken']).encode()):
+            if self.path == '/v1/quota/weekly':
+                try:
+                    status = authorize(cfg, given, self.headers.get('X-Quota-Model', ''))
+                except Exception:
+                    return self.reply(503, {'error': 'route_lookup_unavailable'})
+                if status != 200:
+                    return self.reply(status, {'error': 'quota_access_unavailable'})
+            elif not hmac.compare_digest(given.encode(), ('Bearer ' + cfg['readToken']).encode()):
                 return self.reply(401, {'error': 'invalid_read_token'})
             ok, body = snapshot.get()
             self.reply(200 if ok else 503, body)

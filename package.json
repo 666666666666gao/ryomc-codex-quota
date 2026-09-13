@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=22"},
-  "scripts": {"test": "node --test", "start": "node scripts/quota.mjs serve", "quota": "node scripts/quota.mjs query"}
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node scripts/quota.mjs serve",
+    "quota": "node scripts/quota.mjs query"
+  },
+  "dependencies": {
+    "smol-toml": "1.8.0"
+  }
 }

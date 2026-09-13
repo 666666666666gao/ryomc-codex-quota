@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
-public class OverlayConfig { public string endpoint; public string readToken; }
 public class WeeklyQuota { public double? remainingPercent; public string resetAt; public string queriedAt; public int windowSeconds; }
 public class QuotaOverlay : Form {
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
@@ -22,7 +21,7 @@ public class QuotaOverlay : Form {
     readonly Timer refreshTimer = new Timer();
     readonly HttpClient client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
     readonly JavaScriptSerializer json = new JavaScriptSerializer();
-    readonly OverlayConfig cfg;
+    readonly bool shared;
     bool busy;
     IntPtr codex;
     int offsetX = -390, offsetY = -135;
@@ -30,8 +29,8 @@ public class QuotaOverlay : Form {
     bool dragging;
     protected override bool ShowWithoutActivation { get { return true; } }
     protected override CreateParams CreateParams { get { var p = base.CreateParams; p.ExStyle |= 0x08000000 | 0x80; return p; } }
-    public QuotaOverlay(OverlayConfig config) {
-        cfg = config;
+    public QuotaOverlay(bool sharedMode) {
+        shared = sharedMode;
         FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true;
         StartPosition = FormStartPosition.Manual; Size = new Size(370, 44);
         BackColor = Color.FromArgb(21, 44, 36); Text = "Ryomc 周额度悬浮条";
@@ -45,7 +44,6 @@ public class QuotaOverlay : Form {
         text.MouseMove += (s,e) => { if(dragging) { var p=Cursor.Position; offsetX += p.X-dragStart.X; offsetY += p.Y-dragStart.Y; dragStart=p; MoveToCodex(); } };
         text.MouseUp += (s,e) => dragging=false;
         client.Timeout = TimeSpan.FromSeconds(35);
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", cfg.readToken);
         positionTimer.Interval = 500; positionTimer.Tick += (s,e) => TrackCodex(); positionTimer.Start();
         refreshTimer.Interval = 120000; refreshTimer.Tick += async (s,e) => { if(Visible) await RefreshQuota(); }; refreshTimer.Start();
         Shown += async (s,e) => { TrackCodex(); await RefreshQuota(); };
@@ -70,31 +68,30 @@ public class QuotaOverlay : Form {
     async Task RefreshQuota() {
         if(busy) return; busy=true; text.Text="线路周额度 · 正在查询…";
         try {
-            using(var response=await client.GetAsync(cfg.endpoint)) {
-                if(!response.IsSuccessStatusCode) { text.Text="线路周额度 · 查询失败 HTTP "+(int)response.StatusCode; text.ForeColor=Color.LightSalmon; tip.SetToolTip(text,"未显示旧数据。401 请检查只读令牌，503 表示上游查询不可用。"); return; }
+            var cfg=CodexConnection.Load(shared);
+            using(var request=new HttpRequestMessage(HttpMethod.Get,cfg.endpoint)) {
+            request.Headers.Authorization=new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer",cfg.readToken);
+            if(cfg.model!=null) request.Headers.Add("X-Quota-Model",cfg.model);
+            using(var response=await client.SendAsync(request)) {
+                if(!response.IsSuccessStatusCode) { text.Text="线路周额度 · 查询失败 HTTP "+(int)response.StatusCode; text.ForeColor=Color.LightSalmon; tip.SetToolTip(text,"未显示旧数据。401：密钥无效/禁用；403：线路访问受限；404：此站不支持额度接口；409：上游不唯一；503：服务暂不可用。"); return; }
                 var q=json.Deserialize<WeeklyQuota>(await response.Content.ReadAsStringAsync());
                 if(q == null || q.windowSeconds != 604800 || !q.remainingPercent.HasValue || double.IsNaN(q.remainingPercent.Value) || q.remainingPercent < 0 || q.remainingPercent > 100) throw new FormatException();
                 var reset=String.IsNullOrEmpty(q.resetAt) ? "重置时间未知" : TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Parse(q.resetAt),"China Standard Time").ToString("MM/dd HH:mm")+" 重置";
                 var queried=TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTimeOffset.Parse(q.queriedAt),"China Standard Time");
                 text.Text="周剩余 "+q.remainingPercent.Value.ToString("0.##")+"% · "+reset;
                 text.ForeColor=Color.FromArgb(174,244,207);
-                tip.SetToolTip(text,"共享线路周额度，不是个人钱包余额。\n查询时间："+queried.ToString("yyyy-MM-dd HH:mm:ss")+" 北京时间\n拖动文字移动位置；每两分钟更新，服务端缓存最多两分钟。");
+                tip.SetToolTip(text,"共享线路周额度，不是个人钱包余额。\n来源："+new Uri(cfg.endpoint).Host+"\n查询时间："+queried.ToString("yyyy-MM-dd HH:mm:ss")+" 北京时间\n读取已保存的用户级配置，不读取会话临时覆盖。每两分钟更新；拖动可移动。");
             }
-        } catch(Exception) { text.Text="线路周额度 · 连接或数据异常"; text.ForeColor=Color.LightSalmon; tip.SetToolTip(text,"本次查询失败，未显示旧值或原始错误。"); }
+            }
+        } catch(Exception) { text.Text="线路周额度 · 配置或连接不可用"; text.ForeColor=Color.LightSalmon; tip.SetToolTip(text,"需要当前 Codex 用户配置中的中转 HTTPS Base URL 与 API 密钥。官方 OAuth 登录不能自动查询中转上游；不显示旧值或原始错误。"); }
         finally {busy=false;}
     }
-    [STAThread] public static void Main() {
+    [STAThread] public static void Main(string[] args) {
         bool created; using(var mutex = new System.Threading.Mutex(true,"Local\\RyomcQuotaOverlay",out created)) {
             if(!created) return;
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
-            try {
-                string path=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".config","ryomc-codex-quota","reader.json");
-                var c=new JavaScriptSerializer().Deserialize<OverlayConfig>(File.ReadAllText(path));
-                Uri u;
-                if(c==null || !Uri.TryCreate(c.endpoint,UriKind.Absolute,out u) || u.Scheme!="https" || !String.IsNullOrEmpty(u.UserInfo) || !String.IsNullOrEmpty(u.Query) || !String.IsNullOrEmpty(u.Fragment) || String.IsNullOrWhiteSpace(c.readToken)) throw new FormatException();
-                ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
-                Application.Run(new QuotaOverlay(c));
-            } catch(Exception) { MessageBox.Show("请先配置用户目录 .config/ryomc-codex-quota/reader.json（endpoint 和 readToken），不要填写 CPA 管理密钥。","Ryomc 额度悬浮条"); }
+            ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
+            Application.Run(new QuotaOverlay(Array.IndexOf(args,"--shared")>=0));
         }
     }
 }

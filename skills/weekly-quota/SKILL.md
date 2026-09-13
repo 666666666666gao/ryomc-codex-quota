@@ -11,17 +11,21 @@ Use shell execution with Node.js 22 or later. Do not read the private configurat
 
 ## Query
 
-For ordinary users of the shared service, use `node <absolute-plugin-root>/scripts/reader.mjs`. It reads only the dedicated endpoint and read token from the user's `.config/ryomc-codex-quota/reader.json`. Never ask ordinary users for CPA management credentials. Do not automatically fall back to an administrator query if this fails.
+For ordinary users, use `node <absolute-plugin-root>/scripts/reader.mjs`. Install the lockfile dependencies with `npm ci` in that plugin directory if needed. It reads the saved user-level Codex config.toml (CODEX_HOME or ~/.codex), the selected provider's base_url, model and default profile, and its env_key variable or auth.json OPENAI_API_KEY. It sends the API key only to that same HTTPS base URL plus /quota/weekly, with redirects disabled. Never load private file contents into model context. Never ask ordinary users for CPA management credentials.
+
+The site must deploy the matching quota adapter; a URL does not expose arbitrary upstream accounts. Do not substitute another site's quota, built-in signed-in-account quota, or wallet balance. Runtime CLI/profile/project overrides are not read. Official OAuth-only login is not a relay configuration. Do not change Codex config/auth to make the reader work.
+
+Only when explicitly using the separately configured shared read-only mode, run `node <absolute-plugin-root>/scripts/reader.mjs --shared`. This reads reader.json; never automatically fall back to it or to the administrator query.
 
 For the administrator-only direct CPA connection, explicitly use the following command instead:
 
 Run `node <absolute-plugin-root>/scripts/quota.mjs query`.
 It prints only sanitized weekly quota JSON. Report remaining percentage, reset time in Asia/Shanghai, and queried time. Null means unknown, never zero. A successful quota read does not establish model request health.
-Do not substitute the built-in signed-in-account usage tool, local auth.json, New API wallet balance, or screenshot numbers.
+Do not substitute built-in signed-in-account quota, wallet balance or screenshot numbers for upstream results. The automatic client may read only the API key from local auth.json, never its OAuth credentials.
 
 ## Dashboard and first setup
 
-For the Windows floating bar, run `windows/build.ps1` in this plugin's directory to build `artifacts/RyomcQuota.exe` if it does not exist, then launch that executable. It is an independently running window, not a native Codex status bar. On Windows, use `Start-Process -WindowStyle Hidden` to start the helper; the application controls when its own overlay is shown. Requires reader.json with an HTTPS endpoint and a dedicated read-only token. Only launch when the user requests it. Do not add autostart or change security settings. See server/DEPLOYMENT.md.
+For the Windows floating bar, run `windows/build.ps1` in this plugin's directory to build `artifacts/RyomcQuota.exe` if needed, then launch it with Tommy.dll alongside. This independent window is not a native Codex status bar. Use `Start-Process -WindowStyle Hidden`; the application controls when its own overlay is shown. Default mode reads the saved Codex configuration every refresh. Explicit --shared mode requires the separate reader.json. Only launch when requested. Do not add autostart or change security settings. See server/DEPLOYMENT.md.
 
 The dashboard below is the separate administrator-only mode, not the normal user setup:
 
