@@ -1,0 +1,18 @@
+{
+  "name": "ryomc-codex-quota",
+  "version": "0.1.0",
+  "description": "Read CPA upstream Codex weekly quota in Codex, with a private local dashboard.",
+  "author": {
+    "name": "666666666666gao"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Ryomc 上游额度",
+    "shortDescription": "查看 CPA 上游周额度与重置时间",
+    "longDescription": "查询真实上游周额度，打开本机额度面板。不修改账户、代理、调度或计费。不替换 Codex 原生额度栏。需要 Node.js 22+ 与 CPA 管理访问权限。",
+    "developerName": "666666666666gao",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": ["查看我的 CPA 上游周额度", "打开 Ryomc 额度面板"]
+  }
+}
